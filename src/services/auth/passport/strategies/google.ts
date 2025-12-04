@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { Strategy as GoogleStrategy, Profile, VerifyCallback } from "passport-google-oauth20";
 import { OAuthLoginService } from "@/services/auth/oauth-login";
 
