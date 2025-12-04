@@ -2,6 +2,7 @@ import jwt, { SignOptions } from "jsonwebtoken";
 
 export type JwtPayload = { sub: string; role: string };
 const jwtSecret = process.env.JWT_SECRET ? (process.env.JWT_SECRET as string) : "no-jwt-key";
+const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET ? (process.env.JWT_REFRESH_SECRET as string) : jwtSecret;
 
 export enum TokenExpiry {
   ACCESS_TOKEN_EXPIRES = "15m",
@@ -15,7 +16,7 @@ export function signAccessToken(userId: string, role: string, duration: SignOpti
 
 export function signRefreshToken(userId: string, role: string, duration: SignOptions["expiresIn"]) {
   const payload: JwtPayload = { sub: userId, role };
-  return jwt.sign(payload, jwtSecret, { expiresIn: duration });
+  return jwt.sign(payload, jwtRefreshSecret, { expiresIn: duration });
 }
 
 export function verifyAccessToken(token: string): JwtPayload | null {
@@ -28,7 +29,7 @@ export function verifyAccessToken(token: string): JwtPayload | null {
 
 export function verifyRefreshToken(token: string): JwtPayload | null {
   try {
-    return jwt.verify(token, jwtSecret) as JwtPayload;
+    return jwt.verify(token, jwtRefreshSecret) as JwtPayload;
   } catch {
     return null;
   }

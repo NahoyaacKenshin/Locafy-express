@@ -1,13 +1,12 @@
 // types/express.d.ts
 // Create this file in your src/types folder
 
-import { Role } from '@prisma/client';
-import { Jwt } from 'jsonwebtoken';
+import { JwtPayload } from '@/services/auth/helpers/jwt';
 
 declare global {
   namespace Express {
     interface Request {
-      user?: JwtPayLoad;
+      user?: JwtPayload;
     }
   }
 }
