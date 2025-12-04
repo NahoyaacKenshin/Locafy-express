@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String?
+  email         String?   @unique
+  password      String?
+  image         String?
+  role          Role      @default(CUSTOMER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  emailVerified DateTime? @map("email_verified")
+
+  // Relations
+  accounts      Account[]
+  tokens        Token[]
+  businesses    Business[]     @relation("UserBusinesses")
+  discussions   Discussion[]
+  favorites     Favorite[]
+  adminReviews  Verification[] @relation("AdminVerification")
+  verifications Verification[] @relation("VendorVerification")
+}
+
+model Account {
+  id                String    @id @default(uuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  accessToken       String? // optional
+  refreshToken      String? // optional
+  expiresAt         DateTime? // optional
+  tokenType         String? // optional
+  scope             String? // optional
+  idToken           String? // optional
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId, provider])
+}
+
+model Token {
+  id         String    @id @default(uuid())
+  type       TokenType
+  token      String    @unique
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  consumedAt DateTime?
+  revokedAt  DateTime?
+  userId     String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+}
+
+model Business {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  category    String
+  barangay    String
+  location    String
+  lat         Float?
+  lng         Float?
+  contactInfo String?
+  socials     Json?
+  coverPhoto  String?
+  gallery     String[] @default([])
+  isVerified  Boolean  @default(false)
+  openTime    String?
+  closeTime   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownerId String
+  owner   User   @relation("UserBusinesses", fields: [ownerId], references: [id])
+
+  discussions   Discussion[]
+  favorites     Favorite[]
+  verifications Verification[] @relation("BusinessVerification")
+}
+
+model Verification {
+  id          Int                @id @default(autoincrement())
+  documentUrl String
+  verifiedAt  DateTime?
+  adminId     String?
+  vendorId    String?
+  businessId  Int?
+  status      VerificationStatus @default(PENDING)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  admin    User?     @relation("AdminVerification", fields: [adminId], references: [id])
+  vendor   User?     @relation("VendorVerification", fields: [vendorId], references: [id])
+  business Business? @relation("BusinessVerification", fields: [businessId], references: [id])
+}
+
+model Discussion {
+  id         Int      @id @default(autoincrement())
+  content    String
+  createdAt  DateTime @default(now())
+  businessId Int
+  userId     String
+  parentId   Int?     @map("parent_id")
+
+  business Business     @relation(fields: [businessId], references: [id])
+  user     User         @relation(fields: [userId], references: [id])
+  parent   Discussion?  @relation("DiscussionReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Discussion[] @relation("DiscussionReplies")
+
+  @@index([businessId])
+  @@index([parentId])
+  @@map("discussions")
+}
+
+model Favorite {
+  id         Int      @id @default(autoincrement())
+  userId     String
+  businessId Int
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessId])
+  @@index([userId])
+  @@index([businessId])
+}
+
+enum Role {
+  CUSTOMER
+  VENDOR
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TokenType {
+  REFRESH
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
