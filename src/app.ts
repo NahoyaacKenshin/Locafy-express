@@ -12,8 +12,14 @@ import adminRoutes from '@/routes/adminRoutes';
 export const app = express();
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true,
+  origin: [
+    'http://localhost:3000',                      // Local frontend for testing
+    'https://locafy-ivory.vercel.app/',     // Your Vercel Frontend (NO trailing slash)
+    'https://locafy-ivory.vercel.app//'     // Sometimes browsers send the slash, safe to add both
+  ],
+  credentials: true, // This allows cookies/sessions to work
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json({ limit: '50mb' }));
