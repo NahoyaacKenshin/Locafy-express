@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/server.ts",
-    "start": "node -r tsconfig-paths/register ./dist/server.js",
+    "start": "node ./dist/server-prod.js",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
