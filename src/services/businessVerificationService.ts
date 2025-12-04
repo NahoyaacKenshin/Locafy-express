@@ -43,6 +43,22 @@ class BusinessVerificationService {
         };
       }
 
+      // Check if there's a rejected verification within the last 24 hours
+      const rejectedVerification = existingVerifications.find(v => v.status === 'REJECTED');
+      if (rejectedVerification && rejectedVerification.verifiedAt) {
+        const rejectionTime = new Date(rejectedVerification.verifiedAt).getTime();
+        const now = new Date().getTime();
+        const hoursSinceRejection = (now - rejectionTime) / (1000 * 60 * 60);
+        
+        if (hoursSinceRejection < 24) {
+          const hoursRemaining = Math.ceil(24 - hoursSinceRejection);
+          return {
+            success: false,
+            message: `You can apply for verification again in ${hoursRemaining} hour${hoursRemaining > 1 ? 's' : ''}. Your previous verification was rejected.`,
+          };
+        }
+      }
+
       // Create verification request
       const verification = await verificationRepository.createBusinessVerification({
         documentUrl,

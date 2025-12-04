@@ -233,6 +233,7 @@ class BusinessController {
         contactInfo,
         socials,
         coverPhoto,
+        logo,
         gallery,
         openTime,
         closeTime,
@@ -248,13 +249,12 @@ class BusinessController {
         });
       }
 
-      // Validate that verification document is provided
-      if (!verificationDocumentUrl) {
-        return res.status(400).json({
-          success: false,
-          message: 'Verification document is required. Please upload verification documents.'
-        });
-      }
+      // Verification document is optional - users can submit it later when they want to verify
+
+      // Stringify contactInfo if it's an object (frontend sends it as an object)
+      const contactInfoString = contactInfo 
+        ? (typeof contactInfo === 'string' ? contactInfo : JSON.stringify(contactInfo))
+        : null;
 
       const result = await businessService.createBusiness({
         name,
@@ -265,9 +265,10 @@ class BusinessController {
         ownerId: userId,
         lat: lat ? parseFloat(lat) : null,
         lng: lng ? parseFloat(lng) : null,
-        contactInfo: contactInfo || null,
+        contactInfo: contactInfoString,
         socials: socials || null,
         coverPhoto: coverPhoto || null,
+        logo: logo || null,
         gallery: gallery || [],
         openTime: openTime || null,
         closeTime: closeTime || null,
@@ -296,9 +297,20 @@ class BusinessController {
       return res.status(201).json(result);
     } catch (error) {
       console.error('Create business error:', error);
+      console.error('Error details:', {
+        message: (error as Error).message,
+        stack: (error as Error).stack,
+        body: req.body ? {
+          ...req.body,
+          coverPhoto: req.body.coverPhoto ? `${req.body.coverPhoto.substring(0, 50)}...` : null,
+          logo: req.body.logo ? `${req.body.logo.substring(0, 50)}...` : null,
+          gallery: req.body.gallery ? `${req.body.gallery.length} items` : null,
+          verificationDocumentUrl: req.body.verificationDocumentUrl ? `${req.body.verificationDocumentUrl.substring(0, 50)}...` : null
+        } : null
+      });
       return res.status(500).json({
         success: false,
-        message: (error as Error).message
+        message: (error as Error).message || 'Failed to create business'
       });
     }
   }
@@ -336,6 +348,7 @@ class BusinessController {
         contactInfo,
         socials,
         coverPhoto,
+        logo,
         gallery,
         openTime,
         closeTime,
@@ -350,9 +363,15 @@ class BusinessController {
       if (location !== undefined) updateData.location = location;
       if (lat !== undefined) updateData.lat = lat ? parseFloat(lat) : null;
       if (lng !== undefined) updateData.lng = lng ? parseFloat(lng) : null;
-      if (contactInfo !== undefined) updateData.contactInfo = contactInfo || null;
+      if (contactInfo !== undefined) {
+        // Stringify contactInfo if it's an object (frontend sends it as an object)
+        updateData.contactInfo = contactInfo 
+          ? (typeof contactInfo === 'string' ? contactInfo : JSON.stringify(contactInfo))
+          : null;
+      }
       if (socials !== undefined) updateData.socials = socials || null;
       if (coverPhoto !== undefined) updateData.coverPhoto = coverPhoto || null;
+      if (logo !== undefined) updateData.logo = logo || null;
       if (gallery !== undefined) updateData.gallery = gallery || [];
       if (openTime !== undefined) updateData.openTime = openTime || null;
       if (closeTime !== undefined) updateData.closeTime = closeTime || null;

@@ -258,6 +258,7 @@ class BusinessRepository {
     contactInfo?: string | null;
     socials?: any;
     coverPhoto?: string | null;
+    logo?: string | null;
     gallery?: string[];
     openTime?: string | null;
     closeTime?: string | null;
@@ -290,6 +291,7 @@ class BusinessRepository {
     contactInfo?: string | null;
     socials?: any;
     coverPhoto?: string | null;
+    logo?: string | null;
     gallery?: string[];
     openTime?: string | null;
     closeTime?: string | null;

@@ -120,6 +120,27 @@ class AdminService {
     newRole: Role
   ): Promise<ServiceResponse> {
     try {
+      // First, check if the user exists and get their current role
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, role: true },
+      });
+
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found',
+        };
+      }
+
+      // Prevent changing admin roles
+      if (user.role === 'ADMIN') {
+        return {
+          success: false,
+          message: 'Cannot change the role of an admin user',
+        };
+      }
+
       const userRepository = new UserRepository();
       const updated = await userRepository.updateRole(userId, newRole);
 

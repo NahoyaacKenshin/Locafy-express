@@ -203,7 +203,7 @@ class VerificationRepository {
       data: {
         status,
         adminId,
-        verifiedAt: status === 'APPROVED' ? new Date() : null,
+        verifiedAt: status === 'APPROVED' ? new Date() : (status === 'REJECTED' ? new Date() : null),
       },
       include: {
         vendor: {

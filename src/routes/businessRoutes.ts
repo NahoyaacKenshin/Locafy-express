@@ -2,11 +2,13 @@
 import express, { Router } from 'express';
 import businessController from '@/controllers/businessController';
 import { AuthMiddleware } from '@/middlewares/auth-middleware';
+import { OptionalAuthMiddleware } from '@/middlewares/optional-auth-middleware';
 import { RoleMiddleware } from '@/middlewares/role-middleware';
 import { Role } from '@prisma/client';
 
 const router: Router = express.Router();
 const authMiddleware = new AuthMiddleware();
+const optionalAuthMiddleware = new OptionalAuthMiddleware();
 const vendorOrAdmin = new RoleMiddleware(Role.VENDOR, Role.ADMIN);
 
 // Public routes - no authentication required for browsing
@@ -70,7 +72,12 @@ router.get(
 );
 
 // Get single business (must be after other routes to avoid conflicts)
-router.get('/:id', businessController.getBusinessById);
+// Use optional auth middleware so owners can view their own unverified businesses
+router.get(
+  '/:id',
+  (req, res, next) => optionalAuthMiddleware.execute(req, res, next),
+  businessController.getBusinessById.bind(businessController)
+);
 
 // Get all businesses
 router.get('/', businessController.getAllBusinesses);

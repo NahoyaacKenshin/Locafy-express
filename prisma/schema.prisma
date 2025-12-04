@@ -75,6 +75,7 @@ model Business {
   contactInfo String?
   socials     Json?
   coverPhoto  String?
+  logo        String?
   gallery     String[] @default([])
   isVerified  Boolean  @default(false)
   openTime    String?

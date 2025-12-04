@@ -180,6 +180,7 @@ class BusinessService {
     contactInfo?: string | null;
     socials?: any;
     coverPhoto?: string | null;
+    logo?: string | null;
     gallery?: string[];
     openTime?: string | null;
     closeTime?: string | null;
@@ -248,6 +249,7 @@ class BusinessService {
     contactInfo?: string | null;
     socials?: any;
     coverPhoto?: string | null;
+    logo?: string | null;
     gallery?: string[];
     openTime?: string | null;
     closeTime?: string | null;
