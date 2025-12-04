@@ -14,8 +14,8 @@ export const app = express();
 app.use(cors({
   origin: [
     'http://localhost:3000',                      // Local frontend for testing
-    'https://locafy-ivory.vercel.app/',     // Your Vercel Frontend (NO trailing slash)
-    'https://locafy-ivory.vercel.app//'     // Sometimes browsers send the slash, safe to add both
+    'https://locafy-ivory.vercel.app',     // Your Vercel Frontend (NO trailing slash)
+    'https://locafy-ivory.vercel.app/'     // Sometimes browsers send the slash, safe to add both
   ],
   credentials: true, // This allows cookies/sessions to work
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
