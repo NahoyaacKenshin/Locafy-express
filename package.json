@@ -2,6 +2,10 @@
   "name": "apps-dev-api-final",
   "version": "1.0.0",
   "main": "index.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/server.ts",
