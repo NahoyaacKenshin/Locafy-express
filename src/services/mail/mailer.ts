@@ -66,14 +66,20 @@ function getResendClient(): Resend {
 
 async function sendEmailViaResend({ to, subject, html }: SendEmailParams) {
   const resend = getResendClient();
-  const fromEmail = process.env.RESEND_FROM_EMAIL || process.env.SMTP_FROM;
+  
+  // Resend requires verified domains. Use test domain if no custom domain is set
+  // For production, you should add and verify your own domain in Resend
+  let fromEmail = process.env.RESEND_FROM_EMAIL;
+  
+  // If using Gmail address or no RESEND_FROM_EMAIL set, use Resend's test domain
+  if (!fromEmail || fromEmail.includes('@gmail.com') || fromEmail.includes('@yahoo.com') || fromEmail.includes('@hotmail.com')) {
+    console.warn("⚠️  Using Resend test domain. For production, add and verify your own domain in Resend.");
+    fromEmail = 'onboarding@resend.dev'; // Resend's test domain - works without verification
+  }
+  
   const fromName = process.env.APP_NAME || "Locafy";
   
-  if (!fromEmail) {
-    throw new Error("RESEND_FROM_EMAIL or SMTP_FROM must be configured");
-  }
-
-  console.log(`Sending email via Resend API to ${to}...`);
+  console.log(`Sending email via Resend API to ${to} from ${fromEmail}...`);
   
   const result = await resend.emails.send({
     from: `${fromName} <${fromEmail}>`,
@@ -83,7 +89,12 @@ async function sendEmailViaResend({ to, subject, html }: SendEmailParams) {
   });
 
   if (result.error) {
-    throw new Error(`Resend API error: ${result.error.message || JSON.stringify(result.error)}`);
+    const errorMsg = result.error.message || JSON.stringify(result.error);
+    // If domain not verified error, provide helpful message
+    if (errorMsg.includes('domain is not verified')) {
+      throw new Error(`Resend API error: ${errorMsg}. Use 'onboarding@resend.dev' for testing or add your own verified domain in Resend.`);
+    }
+    throw new Error(`Resend API error: ${errorMsg}`);
   }
 
   console.log(`✓ Email sent successfully via Resend to: ${to} (ID: ${result.data?.id})`);
