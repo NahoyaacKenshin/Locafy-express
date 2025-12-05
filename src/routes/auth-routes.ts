@@ -22,7 +22,7 @@ router.get("/v1/google/callback",
     passport.authenticate("google", { session: false }, (err: any, user: any, info: any) => {
       if (err) {
         // Handle authentication errors
-        const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const frontendURL = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
         const callbackPath = '/oauth-callback';
         const errorParams = new URLSearchParams({
           status: 'error',
@@ -33,7 +33,7 @@ router.get("/v1/google/callback",
       }
       if (!user) {
         // Handle case where user is not authenticated
-        const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const frontendURL = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
         const callbackPath = '/oauth-callback';
         const errorParams = new URLSearchParams({
           status: 'error',

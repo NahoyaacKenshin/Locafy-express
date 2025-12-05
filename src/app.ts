@@ -11,12 +11,24 @@ import adminRoutes from '@/routes/adminRoutes';
 
 export const app = express();
 
+// Get allowed origins from environment or use defaults
+const getAllowedOrigins = (): string[] => {
+  const origins: string[] = [
+    'http://localhost:3000', // Local frontend for testing
+  ];
+  
+  // Add FRONTEND_URL from environment if set
+  if (process.env.FRONTEND_URL) {
+    const frontendUrl = process.env.FRONTEND_URL.replace(/\/$/, '');
+    origins.push(frontendUrl);
+    origins.push(`${frontendUrl}/`); // Some browsers send trailing slash
+  }
+  
+  return origins;
+};
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000',                      // Local frontend for testing
-    'https://locafy-ivory.vercel.app',     // Your Vercel Frontend (NO trailing slash)
-    'https://locafy-ivory.vercel.app/'     // Sometimes browsers send the slash, safe to add both
-  ],
+  origin: getAllowedOrigins(),
   credentials: true, // This allows cookies/sessions to work
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

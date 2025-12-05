@@ -50,8 +50,8 @@ export class AuthController {
     const oauthResult = (req as any).user;
     const result = oauthResult ?? { code: 500, status: "error", message: "OAuth authentication failed" };
     
-    // Get frontend URL from environment
-    const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
+    // Get frontend URL from environment - remove trailing slash
+    const frontendURL = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
     const callbackPath = '/oauth-callback';
     
     console.log('OAuth callback result:', { status: result.status, hasData: !!result.data });
