@@ -21,7 +21,7 @@ model User {
   // Relations
   accounts      Account[]
   tokens        Token[]
-  businesses    Business[]     @relation("UserBusinesses")
+  businesses    Business[]   @relation("UserBusinesses")
   discussions   Discussion[]
   favorites     Favorite[]
   adminReviews  Verification[] @relation("AdminVerification")
@@ -29,18 +29,18 @@ model User {
 }
 
 model Account {
-  id                String    @id @default(uuid())
+  id                String  @id @default(uuid())
   userId            String
   provider          String
   providerAccountId String
-  accessToken       String? // optional
-  refreshToken      String? // optional
-  expiresAt         DateTime? // optional
-  tokenType         String? // optional
-  scope             String? // optional
-  idToken           String? // optional
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  accessToken       String? 
+  refreshToken      String? 
+  expiresAt         DateTime? 
+  tokenType         String? 
+  scope             String? 
+  idToken           String? 
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -84,7 +84,8 @@ model Business {
   updatedAt   DateTime @updatedAt
 
   ownerId String
-  owner   User   @relation("UserBusinesses", fields: [ownerId], references: [id])
+  // FIX 1: Added onDelete: Cascade. If User is deleted, delete their Business.
+  owner   User   @relation("UserBusinesses", fields: [ownerId], references: [id], onDelete: Cascade)
 
   discussions   Discussion[]
   favorites     Favorite[]
@@ -104,7 +105,9 @@ model Verification {
 
   admin    User?     @relation("AdminVerification", fields: [adminId], references: [id])
   vendor   User?     @relation("VendorVerification", fields: [vendorId], references: [id])
-  business Business? @relation("BusinessVerification", fields: [businessId], references: [id])
+  
+  // FIX 2: Added onDelete: Cascade. If Business is deleted, delete the verification request.
+  business Business? @relation("BusinessVerification", fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model Discussion {
@@ -115,9 +118,13 @@ model Discussion {
   userId     String
   parentId   Int?     @map("parent_id")
 
-  business Business     @relation(fields: [businessId], references: [id])
-  user     User         @relation(fields: [userId], references: [id])
-  parent   Discussion?  @relation("DiscussionReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  // FIX 3: Added onDelete: Cascade. This fixes your specific 500 error.
+  business Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  // FIX 4: Added onDelete: Cascade. If User is deleted, delete their comments.
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  parent   Discussion? @relation("DiscussionReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies  Discussion[] @relation("DiscussionReplies")
 
   @@index([businessId])
