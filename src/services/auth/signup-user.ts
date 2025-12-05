@@ -33,7 +33,7 @@ export async function SignupUserService(name: string, email: string, password: s
     
     // Format URLs - ensure they're properly formatted (no trailing slashes)
     const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
-    const emailVerificationURL = `${frontendUrl}/api/auth/v1/verify-email?token=${encodeURIComponent(token)}`;
+    const emailVerificationURL = `${frontendUrl}/verify-email?token=${encodeURIComponent(token)}`;
     const logoURL = `${frontendUrl}/logo.jpg`;
     const html = renderTemplate("verify-email.html", {
       name: created.name ?? "there",
@@ -49,9 +49,20 @@ export async function SignupUserService(name: string, email: string, password: s
       subject: "Verify your email address",
       html,
     }).catch((emailError) => {
-      // Log email error but don't fail the registration
-      console.error("Failed to send verification email:", emailError);
-      // Email will be sent in background
+      // Log detailed email error for debugging
+      console.error("=== EMAIL SENDING ERROR ===");
+      console.error("Failed to send verification email to:", created.email ?? email);
+      console.error("Error message:", emailError?.message || emailError);
+      console.error("Error stack:", emailError?.stack);
+      console.error("SMTP Configuration Check:");
+      console.error("  SMTP_HOST:", process.env.SMTP_HOST ? "✓ Set" : "✗ Missing");
+      console.error("  SMTP_PORT:", process.env.SMTP_PORT ? `✓ Set (${process.env.SMTP_PORT})` : "✗ Missing");
+      console.error("  SMTP_USER:", process.env.SMTP_USER ? "✓ Set" : "✗ Missing");
+      console.error("  SMTP_PASSWORD:", process.env.SMTP_PASSWORD ? "✓ Set" : "✗ Missing");
+      console.error("  SMTP_FROM:", process.env.SMTP_FROM ? `✓ Set (${process.env.SMTP_FROM})` : "✗ Missing");
+      console.error("  APP_NAME:", process.env.APP_NAME ? `✓ Set (${process.env.APP_NAME})` : "✗ Missing");
+      console.error("  FRONTEND_URL:", process.env.FRONTEND_URL ? `✓ Set (${process.env.FRONTEND_URL})` : "✗ Missing");
+      console.error("===========================");
     });
 
     // Success message - return immediately without waiting for email

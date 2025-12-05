@@ -55,11 +55,30 @@ export async function ForgotPasswordService(email: string) {
     });
 
     // Send Password Reset Email
-    await sendEmail({
-      to: user.email ?? email,
-      subject: "Reset your password",
-      html,
-    });
+    try {
+      await sendEmail({
+        to: user.email ?? email,
+        subject: "Reset your password",
+        html,
+      });
+      console.log(`✓ Password reset email sent successfully to: ${user.email ?? email}`);
+    } catch (emailError: any) {
+      // Log detailed email error for debugging
+      console.error("=== PASSWORD RESET EMAIL ERROR ===");
+      console.error("Failed to send password reset email to:", user.email ?? email);
+      console.error("Error message:", emailError?.message || emailError);
+      console.error("Error stack:", emailError?.stack);
+      console.error("SMTP Configuration Check:");
+      console.error("  SMTP_HOST:", process.env.SMTP_HOST ? "✓ Set" : "✗ Missing");
+      console.error("  SMTP_PORT:", process.env.SMTP_PORT ? `✓ Set (${process.env.SMTP_PORT})` : "✗ Missing");
+      console.error("  SMTP_USER:", process.env.SMTP_USER ? "✓ Set" : "✗ Missing");
+      console.error("  SMTP_PASSWORD:", process.env.SMTP_PASSWORD ? "✓ Set" : "✗ Missing");
+      console.error("  SMTP_FROM:", process.env.SMTP_FROM ? `✓ Set (${process.env.SMTP_FROM})` : "✗ Missing");
+      console.error("  APP_NAME:", process.env.APP_NAME ? `✓ Set (${process.env.APP_NAME})` : "✗ Missing");
+      console.error("==================================");
+      // Re-throw to be caught by outer catch
+      throw emailError;
+    }
 
     return {
       code: 200,
