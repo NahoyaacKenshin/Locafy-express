@@ -34,12 +34,10 @@ export async function SignupUserService(name: string, email: string, password: s
     // Format URLs - ensure they're properly formatted (no trailing slashes)
     const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
     const emailVerificationURL = `${frontendUrl}/verify-email?token=${encodeURIComponent(token)}`;
-    const logoURL = `${frontendUrl}/logo.jpg`;
     const html = renderTemplate("verify-email.html", {
       name: created.name ?? "there",
       emailVerificationURL,
       expiresAt: expiresAt.toUTCString(),
-      logoURL,
     });
 
     // Send Email Verification (non-blocking - don't await to prevent timeout)
