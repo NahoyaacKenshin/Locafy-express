@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { SignupUserService, LoginCredentialsService, VerifyEmailService, RefreshTokenService, ResendEmailVerificationService, ForgotPasswordService, ResetPasswordService } from "@/services/auth";
+import { SignupUserService, LoginCredentialsService, VerifyEmailService, RefreshTokenService, ForgotPasswordService, ResetPasswordService } from "@/services/auth";
 import { generateTempToken } from "@/services/auth/temp-token";
 
 export class AuthController {
@@ -28,13 +28,6 @@ export class AuthController {
   public async refresh(req: Request, res: Response) {
     const { refreshToken } = req.body ?? {};
     const result = await RefreshTokenService(refreshToken);
-    return res.status(result.code).json(result);
-  }
-
-  // Resend Email Verification
-  public async resendEmailVerification(req: Request, res: Response) {
-    const { email } = req.body ?? {};
-    const result = await ResendEmailVerificationService(email);
     return res.status(result.code).json(result);
   }
 

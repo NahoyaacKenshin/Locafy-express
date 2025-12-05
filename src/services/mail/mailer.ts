@@ -40,11 +40,20 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
     throw new Error("SMTP_FROM / APP_NAME must be configured");
   }
 
-  await getTransporter().sendMail({
+  // Add timeout to email sending (30 seconds)
+  const emailPromise = getTransporter().sendMail({
     from: `"${process.env.APP_NAME}" <${process.env.SMTP_FROM}>`,
     to,
     subject,
     html,
   });
+
+  // Create a timeout promise
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error("Email sending timeout")), 30000);
+  });
+
+  // Race between email sending and timeout
+  await Promise.race([emailPromise, timeoutPromise]);
 }
 

@@ -43,13 +43,15 @@ export async function ForgotPasswordService(email: string) {
 
     await tokenRepository.createPasswordResetToken({ userId: user.id, token, expiresAt });
 
-    const resetPasswordURL = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${encodeURIComponent(token)}`;
-
-    // Format Email HTML
+    // Format URLs - ensure they're properly formatted (no trailing slashes)
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const resetPasswordURL = `${frontendUrl}/reset-password?token=${encodeURIComponent(token)}`;
+    const logoURL = `${frontendUrl}/logo.jpg`;
     const html = renderTemplate("reset-password.html", {
       name: user.name ?? "there",
       resetPasswordURL,
       expiresAt: expiresAt.toUTCString(),
+      logoURL,
     });
 
     // Send Password Reset Email

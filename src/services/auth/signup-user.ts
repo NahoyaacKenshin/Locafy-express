@@ -30,23 +30,31 @@ export async function SignupUserService(name: string, email: string, password: s
 
     // Insert Email Verification Token
     await tokenRepository.createEmailVerificationToken({ userId: created.id, token, expiresAt });
-    const emailVerificationURL = `${process.env.FRONTEND_URL}/api/auth/v1/verify-email?token=${encodeURIComponent(token)}`;
-
-    // Format Email HTML
+    
+    // Format URLs - ensure they're properly formatted (no trailing slashes)
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const emailVerificationURL = `${frontendUrl}/api/auth/v1/verify-email?token=${encodeURIComponent(token)}`;
+    const logoURL = `${frontendUrl}/logo.jpg`;
     const html = renderTemplate("verify-email.html", {
       name: created.name ?? "there",
       emailVerificationURL,
       expiresAt: expiresAt.toUTCString(),
+      logoURL,
     });
 
-    // Send Email Verification
-    await sendEmail({
+    // Send Email Verification (non-blocking - don't await to prevent timeout)
+    // Return success immediately, email will be sent in background
+    sendEmail({
       to: created.email ?? email,
       subject: "Verify your email address",
       html,
+    }).catch((emailError) => {
+      // Log email error but don't fail the registration
+      console.error("Failed to send verification email:", emailError);
+      // Email will be sent in background
     });
 
-    // Success message
+    // Success message - return immediately without waiting for email
     return {
       code: 200,
       status: "success",
