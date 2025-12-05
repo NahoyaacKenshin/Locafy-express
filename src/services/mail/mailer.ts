@@ -1,4 +1,5 @@
 import nodemailer, { Transporter } from "nodemailer";
+import { Resend } from "resend";
 
 type SendEmailParams = {
   to: string;
@@ -7,6 +8,7 @@ type SendEmailParams = {
 };
 
 let transporter: Transporter | null = null;
+let resendClient: Resend | null = null;
 
 function buildTransporter(): Transporter {
   if (!process.env.SMTP_HOST || !process.env.SMTP_PORT) {
@@ -51,11 +53,59 @@ function getTransporter(): Transporter {
   return transporter;
 }
 
+function getResendClient(): Resend {
+  if (!resendClient) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      throw new Error("RESEND_API_KEY must be configured for production email sending");
+    }
+    resendClient = new Resend(apiKey);
+  }
+  return resendClient;
+}
+
+async function sendEmailViaResend({ to, subject, html }: SendEmailParams) {
+  const resend = getResendClient();
+  const fromEmail = process.env.RESEND_FROM_EMAIL || process.env.SMTP_FROM;
+  const fromName = process.env.APP_NAME || "Locafy";
+  
+  if (!fromEmail) {
+    throw new Error("RESEND_FROM_EMAIL or SMTP_FROM must be configured");
+  }
+
+  console.log(`Sending email via Resend API to ${to}...`);
+  
+  const result = await resend.emails.send({
+    from: `${fromName} <${fromEmail}>`,
+    to,
+    subject,
+    html,
+  });
+
+  if (result.error) {
+    throw new Error(`Resend API error: ${result.error.message || JSON.stringify(result.error)}`);
+  }
+
+  console.log(`✓ Email sent successfully via Resend to: ${to} (ID: ${result.data?.id})`);
+  return result;
+}
+
 export async function sendEmail({ to, subject, html }: SendEmailParams) {
   if (!process.env.SMTP_FROM || !process.env.APP_NAME) {
     throw new Error("SMTP_FROM / APP_NAME must be configured");
   }
 
+  // Use Resend API if RESEND_API_KEY is set (recommended for production/Railway)
+  if (process.env.RESEND_API_KEY) {
+    try {
+      return await sendEmailViaResend({ to, subject, html });
+    } catch (error: any) {
+      console.error("Resend API failed, falling back to SMTP:", error?.message || error);
+      // Fall through to SMTP if Resend fails
+    }
+  }
+
+  // Fallback to SMTP (for local development or if Resend is not configured)
   const emailTransporter = getTransporter();
   
   try {
@@ -70,7 +120,7 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
     console.log(`✓ SMTP connection verified successfully`);
 
     // Send email with longer timeout (60 seconds for actual sending)
-    console.log(`Sending email to ${to}...`);
+    console.log(`Sending email via SMTP to ${to}...`);
     const emailPromise = emailTransporter.sendMail({
       from: `"${process.env.APP_NAME}" <${process.env.SMTP_FROM}>`,
       to,
@@ -85,7 +135,7 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
 
     // Race between email sending and timeout
     const result = await Promise.race([emailPromise, timeoutPromise]);
-    console.log(`✓ Email sent successfully to: ${to}`);
+    console.log(`✓ Email sent successfully via SMTP to: ${to}`);
     
     // Close the connection after sending
     emailTransporter.close();
@@ -114,10 +164,11 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
       port: error?.port,
     });
     
-    // Log SMTP configuration for debugging
-    console.error("SMTP Configuration:", {
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
+    // Log configuration for debugging
+    console.error("Email Configuration:", {
+      usingResend: !!process.env.RESEND_API_KEY,
+      smtpHost: process.env.SMTP_HOST,
+      smtpPort: process.env.SMTP_PORT,
       secure: process.env.SMTP_SECURE,
       user: process.env.SMTP_USER ? "✓ Set" : "✗ Missing",
       password: process.env.SMTP_PASSWORD ? "✓ Set" : "✗ Missing",
