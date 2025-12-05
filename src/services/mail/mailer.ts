@@ -90,9 +90,9 @@ async function sendEmailViaResend({ to, subject, html }: SendEmailParams) {
 
   if (result.error) {
     const errorMsg = result.error.message || JSON.stringify(result.error);
-    // If domain not verified error, provide helpful message
-    if (errorMsg.includes('domain is not verified')) {
-      throw new Error(`Resend API error: ${errorMsg}. Use 'onboarding@resend.dev' for testing or add your own verified domain in Resend.`);
+    // If domain not verified or test domain limitation error, provide helpful message
+    if (errorMsg.includes('domain is not verified') || errorMsg.includes('only send testing emails to your own email')) {
+      throw new Error(`Resend API error: ${errorMsg}. You need to verify a domain in Resend to send to any email address. Go to https://resend.com/domains to add and verify your domain.`);
     }
     throw new Error(`Resend API error: ${errorMsg}`);
   }
@@ -101,12 +101,51 @@ async function sendEmailViaResend({ to, subject, html }: SendEmailParams) {
   return result;
 }
 
+async function sendEmailViaVercel({ to, subject, html }: SendEmailParams) {
+  const vercelEmailServiceUrl = process.env.VERCEL_EMAIL_SERVICE_URL || process.env.FRONTEND_URL;
+  
+  if (!vercelEmailServiceUrl) {
+    throw new Error("VERCEL_EMAIL_SERVICE_URL or FRONTEND_URL must be configured to use Vercel email service");
+  }
+
+  const emailServiceUrl = `${vercelEmailServiceUrl.replace(/\/$/, '')}/api/email/send`;
+  
+  console.log(`Sending email via Vercel email service to ${to}...`);
+  
+  const response = await fetch(emailServiceUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ to, subject, html }),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok || !result.success) {
+    throw new Error(result.error || `Vercel email service failed with status ${response.status}`);
+  }
+
+  console.log(`✓ Email sent successfully via Vercel to: ${to} (ID: ${result.messageId})`);
+  return result;
+}
+
 export async function sendEmail({ to, subject, html }: SendEmailParams) {
   if (!process.env.SMTP_FROM || !process.env.APP_NAME) {
     throw new Error("SMTP_FROM / APP_NAME must be configured");
   }
 
-  // Use Resend API if RESEND_API_KEY is set (recommended for production/Railway)
+  // Priority 1: Use Vercel email service if VERCEL_EMAIL_SERVICE_URL is set
+  if (process.env.VERCEL_EMAIL_SERVICE_URL || process.env.USE_VERCEL_EMAIL_SERVICE === 'true') {
+    try {
+      return await sendEmailViaVercel({ to, subject, html });
+    } catch (error: any) {
+      console.error("Vercel email service failed, trying Resend:", error?.message || error);
+      // Fall through to Resend or SMTP
+    }
+  }
+
+  // Priority 2: Use Resend API if RESEND_API_KEY is set (recommended for production/Railway)
   if (process.env.RESEND_API_KEY) {
     try {
       return await sendEmailViaResend({ to, subject, html });
