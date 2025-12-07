@@ -336,10 +336,28 @@ class AdminService {
       );
 
       // If this is a business verification, mark the business as verified
-      if (updated.businessId) {
+      if (updated.businessId && updated.business) {
+        // Check if this will be the owner's first verified business (before updating)
+        let isFirstVerifiedBusiness = false;
+        if (updated.business.ownerId) {
+          const verifiedBusinessCount = await businessRepository.countVerifiedByOwnerId(updated.business.ownerId);
+          isFirstVerifiedBusiness = verifiedBusinessCount === 0;
+        }
+
+        // Mark the business as verified
         await businessRepository.update(updated.businessId, {
           isVerified: true,
         });
+
+        // Upgrade CUSTOMER to VENDOR when their first business is approved
+        if (updated.business.ownerId && isFirstVerifiedBusiness) {
+          const userRepository = new UserRepository();
+          const ownerRole = await userRepository.getUserRole(updated.business.ownerId);
+          
+          if (ownerRole === 'CUSTOMER') {
+            await userRepository.updateRole(updated.business.ownerId, 'VENDOR');
+          }
+        }
       }
 
       return {

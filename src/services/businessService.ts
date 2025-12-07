@@ -211,20 +211,6 @@ class BusinessService {
         };
       }
 
-      // Check if user is CUSTOMER and upgrade to VENDOR when creating first business
-      const userRepository = new UserRepository();
-      const actualUserRole = userRole || await userRepository.getUserRole(data.ownerId);
-      
-      if (actualUserRole === 'CUSTOMER') {
-        // Check if this is their first business
-        const businessCount = await businessRepository.countByOwnerId(data.ownerId);
-
-        // If this is their first business, upgrade to VENDOR
-        if (businessCount === 0) {
-          await userRepository.updateRole(data.ownerId, 'VENDOR');
-        }
-      }
-
       const business = await businessRepository.create(data);
 
       return {

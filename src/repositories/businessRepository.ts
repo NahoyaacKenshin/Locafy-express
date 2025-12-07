@@ -336,6 +336,16 @@ class BusinessRepository {
     });
   }
 
+  // Count verified businesses owned by a user
+  async countVerifiedByOwnerId(ownerId: string): Promise<number> {
+    return await prisma.business.count({
+      where: { 
+        ownerId,
+        isVerified: true,
+      },
+    });
+  }
+
   // Get all businesses owned by a user (including unverified)
   async findByOwnerId(ownerId: string, filters: BusinessFilters = {}): Promise<BusinessListResult> {
     const {
