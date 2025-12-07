@@ -5,7 +5,7 @@ export class UserRepository {
   async findById(id: string) {
     return await prisma.user.findFirst({ 
       where: { id },
-      select: { id: true, name: true, email: true, createdAt: true, role: true, emailVerified: true },
+      select: { id: true, name: true, email: true, createdAt: true, role: true, emailVerified: true, image: true },
     });
   }
 

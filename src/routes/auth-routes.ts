@@ -2,10 +2,12 @@ import { Router } from "express";
 import passport from "passport";
 import { AuthController } from "@/controllers/auth-controller";
 import { exchangeTempToken, getTempTokenStoreSize } from "@/services/auth/temp-token";
+import { AuthMiddleware } from "@/middlewares/auth-middleware";
 
 // Initialize
 const router = Router();
 const authController = new AuthController();
+const authMiddleware = new AuthMiddleware();
 
 // Authentication Routes
 router.post("/v1/signup", authController.signup);
@@ -14,6 +16,7 @@ router.get("/v1/verify-email", authController.verifyEmail);
 router.post("/v1/refresh-token", authController.refresh);
 router.post("/v1/forgot-password", authController.forgotPassword);
 router.post("/v1/reset-password", authController.resetPassword);
+router.get("/v1/me", authMiddleware.execute, authController.getCurrentUser);
 
 // OAuth (Google & GitHub) Routes
 router.get("/v1/google", passport.authenticate("google", { scope: ["profile", "email"], session: false }));

@@ -1,6 +1,14 @@
 import { Request, Response } from "express";
 import { SignupUserService, LoginCredentialsService, VerifyEmailService, RefreshTokenService, ForgotPasswordService, ResetPasswordService } from "@/services/auth";
 import { generateTempToken } from "@/services/auth/temp-token";
+import { UserRepository } from "@/repositories/user-repository";
+
+interface AuthenticatedRequest extends Request {
+  user?: {
+    sub: string;
+    role: string;
+  };
+}
 
 export class AuthController {
   // Credentials Signup
@@ -43,6 +51,54 @@ export class AuthController {
     const { token, password } = req.body ?? {};
     const result = await ResetPasswordService(token, password);
     return res.status(result.code).json(result);
+  }
+
+  // Get Current User (Me)
+  public async getCurrentUser(req: Request, res: Response) {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const userId = authReq.user?.sub;
+
+      if (!userId) {
+        return res.status(401).json({
+          code: 401,
+          status: "error",
+          message: "Authentication required"
+        });
+      }
+
+      const userRepository = new UserRepository();
+      const user = await userRepository.findById(userId);
+
+      if (!user) {
+        return res.status(404).json({
+          code: 404,
+          status: "error",
+          message: "User not found"
+        });
+      }
+
+      return res.status(200).json({
+        code: 200,
+        status: "success",
+        data: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          image: user.image,
+          emailVerified: user.emailVerified,
+          createdAt: user.createdAt,
+        }
+      });
+    } catch (error) {
+      console.error('Get current user error:', error);
+      return res.status(500).json({
+        code: 500,
+        status: "error",
+        message: (error as Error).message || "Failed to get current user"
+      });
+    }
   }
 
   // OAuth Callback
