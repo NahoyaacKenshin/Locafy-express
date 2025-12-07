@@ -12,7 +12,7 @@ export async function LoginCredentialsService(email: string, password: string) {
 
   try {
     // Validate User Credentials
-    const user = await userRepository.findByEmail(email);
+    const user = await userRepository.findByEmailWithPassword(email);
     if (!user || !user.password || !verifyPassword(password, user.password)) {
       return { code: 400, status: "error", message: "Invalid Credentials" };
     }

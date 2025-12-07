@@ -16,6 +16,13 @@ export class UserRepository {
     });
   }
 
+  async findByEmailWithPassword(email: string) {
+    return await prisma.user.findFirst({ 
+      where: { email },
+      select: { id: true, name: true, email: true, createdAt: true, role: true, emailVerified: true, image: true, password: true },
+    });
+  }
+
   async create(data: { name?: string | null; email?: string | null; password?: string | null; emailVerified?: Date | null; image?: string | null }) {
     return await prisma.user.create({ 
       data,

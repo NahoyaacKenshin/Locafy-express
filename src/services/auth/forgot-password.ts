@@ -15,7 +15,7 @@ export async function ForgotPasswordService(email: string) {
 
   try {
     // Check if User is found
-    const user = await userRepository.findByEmail(email);
+    const user = await userRepository.findByEmailWithPassword(email);
     if (!user) {
       // Don't reveal if email exists or not for security
       return { 
