@@ -212,31 +212,26 @@ class BusinessService {
       }
 
       // Check if this is the user's first business (before creating)
-      // This helps determine if we need to upgrade CUSTOMER to VENDOR
-      const existingBusinessCount = await businessRepository.countByOwnerId(data.ownerId);
-      const isFirstBusiness = existingBusinessCount === 0;
+      // If user is CUSTOMER and has no businesses, upgrade to VENDOR
+      let isFirstBusiness = false;
+      if (userRole === 'CUSTOMER') {
+        const businessCount = await businessRepository.countByOwnerId(data.ownerId);
+        isFirstBusiness = businessCount === 0;
+      }
 
-      // Create the business
       const business = await businessRepository.create(data);
 
       // Upgrade CUSTOMER to VENDOR when they create their first business
-      // This allows them to edit their business immediately without waiting for verification
       if (isFirstBusiness && userRole === 'CUSTOMER') {
-        try {
-          const userRepository = new UserRepository();
-          await userRepository.updateRole(data.ownerId, 'VENDOR');
-          console.log(`Role upgraded from CUSTOMER to VENDOR for user ${data.ownerId} after creating first business`);
-        } catch (roleUpgradeError) {
-          console.error(`Failed to upgrade role for user ${data.ownerId} after business creation:`, roleUpgradeError);
-          // Don't fail business creation if role upgrade fails
-          // The business was created successfully, role upgrade is secondary
-        }
+        const userRepository = new UserRepository();
+        await userRepository.updateRole(data.ownerId, 'VENDOR');
       }
 
       return {
         success: true,
         data: business,
-        message: 'Business created successfully'
+        message: 'Business created successfully',
+        isFirstBusiness: isFirstBusiness
       };
     } catch (error) {
       throw new Error(`Failed to create business: ${(error as Error).message}`);
