@@ -7,6 +7,7 @@ interface ServiceResponse<T = any> {
   success: boolean;
   data?: T;
   message?: string;
+  isFirstBusiness?: boolean;
 }
 
 interface BusinessFilters {
