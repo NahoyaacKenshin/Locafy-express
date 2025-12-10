@@ -337,25 +337,39 @@ class AdminService {
 
       // If this is a business verification, mark the business as verified
       if (updated.businessId && updated.business) {
-        // Check if this will be the owner's first verified business (before updating)
-        let isFirstVerifiedBusiness = false;
-        if (updated.business.ownerId) {
-          const verifiedBusinessCount = await businessRepository.countVerifiedByOwnerId(updated.business.ownerId);
-          isFirstVerifiedBusiness = verifiedBusinessCount === 0;
-        }
+        const ownerId = updated.business.ownerId;
+        
+        if (!ownerId) {
+          console.error('Business has no ownerId:', updated.businessId);
+        } else {
+          // Check if this will be the owner's first verified business (before updating)
+          const verifiedBusinessCount = await businessRepository.countVerifiedByOwnerId(ownerId);
+          const isFirstVerifiedBusiness = verifiedBusinessCount === 0;
 
-        // Mark the business as verified
-        await businessRepository.update(updated.businessId, {
-          isVerified: true,
-        });
+          // Mark the business as verified
+          await businessRepository.update(updated.businessId, {
+            isVerified: true,
+          });
 
-        // Upgrade CUSTOMER to VENDOR when their first business is approved
-        if (updated.business.ownerId && isFirstVerifiedBusiness) {
-          const userRepository = new UserRepository();
-          const ownerRole = await userRepository.getUserRole(updated.business.ownerId);
-          
-          if (ownerRole === 'CUSTOMER') {
-            await userRepository.updateRole(updated.business.ownerId, 'VENDOR');
+          // Upgrade CUSTOMER to VENDOR when their first business is approved
+          if (isFirstVerifiedBusiness) {
+            try {
+              const userRepository = new UserRepository();
+              const ownerRole = await userRepository.getUserRole(ownerId);
+              
+              if (ownerRole === 'CUSTOMER') {
+                await userRepository.updateRole(ownerId, 'VENDOR');
+                console.log(`Role upgraded from CUSTOMER to VENDOR for user ${ownerId} after first business approval`);
+              } else {
+                console.log(`User ${ownerId} role is ${ownerRole}, no upgrade needed`);
+              }
+            } catch (roleUpgradeError) {
+              console.error(`Failed to upgrade role for user ${ownerId}:`, roleUpgradeError);
+              // Don't fail the entire approval if role upgrade fails
+              // The business is already verified, which is the primary action
+            }
+          } else {
+            console.log(`User ${ownerId} already has ${verifiedBusinessCount} verified business(es), no role upgrade needed`);
           }
         }
       }
