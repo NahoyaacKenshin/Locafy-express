@@ -351,7 +351,9 @@ class AdminService {
             isVerified: true,
           });
 
-          // Upgrade CUSTOMER to VENDOR when their first business is approved
+          // Safety net: Upgrade CUSTOMER to VENDOR if this is their first verified business
+          // Note: Users should already be VENDOR from when they created their first business,
+          // but this serves as a backup in case someone still has CUSTOMER role (e.g., old data)
           if (isFirstVerifiedBusiness) {
             try {
               const userRepository = new UserRepository();
@@ -359,17 +361,14 @@ class AdminService {
               
               if (ownerRole === 'CUSTOMER') {
                 await userRepository.updateRole(ownerId, 'VENDOR');
-                console.log(`Role upgraded from CUSTOMER to VENDOR for user ${ownerId} after first business approval`);
-              } else {
-                console.log(`User ${ownerId} role is ${ownerRole}, no upgrade needed`);
+                console.log(`[Safety net] Role upgraded from CUSTOMER to VENDOR for user ${ownerId} after first business approval`);
               }
+              // If already VENDOR or ADMIN, no action needed (this is expected)
             } catch (roleUpgradeError) {
               console.error(`Failed to upgrade role for user ${ownerId}:`, roleUpgradeError);
               // Don't fail the entire approval if role upgrade fails
               // The business is already verified, which is the primary action
             }
-          } else {
-            console.log(`User ${ownerId} already has ${verifiedBusinessCount} verified business(es), no role upgrade needed`);
           }
         }
       }
