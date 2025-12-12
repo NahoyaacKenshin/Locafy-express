@@ -164,6 +164,7 @@ class VerificationRepository {
               id: true,
               name: true,
               ownerId: true,
+              isVerified: true,
               owner: {
                 select: {
                   id: true,
